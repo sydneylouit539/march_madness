@@ -12,9 +12,9 @@ def get_all_teams(year, gender = 'M'):
         team_table = pd.read_html('https://www.sports-reference.com/cbb/schools/')[0]
     else:
         team_table = pd.read_html('https://www.sports-reference.com/cbb/schools/')[1]
-    teams = team_table.School[team_table.To == str(year)]
-    teams = teams.str.lower().replace(' ', '-', regex = True).replace('\&', '', regex = True).replace('\(', '', regex = True).replace('\)', '', regex = True).replace("\'", '', regex = True).replace('\.','', regex = True)
-    return teams
+    team_names = team_table.School[team_table.To == str(year)]
+    teams = team_names.str.lower().replace(' ', '-', regex = True).replace('\&', '', regex = True).replace('\(', '', regex = True).replace('\)', '', regex = True).replace("\'", '', regex = True).replace('\.','', regex = True)
+    return pd.DataFrame(np.transpose([team_names.tolist(), teams.tolist()]), columns = ['Name', 'name'])
 
 
 def slelo(team, year = 2024, men = True, thisyear = False):
@@ -74,7 +74,7 @@ def slelo(team, year = 2024, men = True, thisyear = False):
         BPM = float(tots / allmin)
         print(BPM)
         bennett.append(float(((1 + (SOS / 25)) * PYT * (15 + BPM / 1.5)) + EXP))
-    time.sleep(2)
+        time.sleep(3)
     if (team == 'merrimack') or (thisyear == True):
         SLELO = (30 * bennett[0])**0.9
     else:
@@ -83,107 +83,60 @@ def slelo(team, year = 2024, men = True, thisyear = False):
     return float(SLELO)
 
 
-
-
-x = get_all_teams(2024)
-for i in x[:10]:
-    print([i, slelo(i)])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def get_team_bpm(tables):
+    bpm_table = tables[13].fillna(0)
+    min_factor = (bpm_table.MP / (bpm_table.G + 2)) ** 1.4
+    adj_mpg = 200 * min_factor / sum(min_factor)
+    return np.dot(bpm_table.BPM, adj_mpg) / 200
+
+
+def get_team_experience(tables):
+    my_keys = {
+        'FR' : 1,
+        'SO' : 2,
+        'JR' : 3,
+        'SR' : 4,
+        np.nan : 2.5
+    }
+    roster = tables[0]
+    exper = [my_keys.get(i) for i in roster.Class[pd.notnull(roster.Summary)]]
+    bpm_table = tables[13]
+    min_factor = (bpm_table.MP / (bpm_table.G + 2)) ** 1.4
+    adj_mpg = 200 * min_factor / sum(min_factor)
+    return np.average(exper, weights = adj_mpg)
+
+
+def slelo_2024(team, year = 2024, gender = 'men'):
+    tables = pd.read_html(f'https://www.sports-reference.com/cbb/schools/{team}/{gender}/{year}.html')
+    exp_0 = get_team_experience(tables)
+    bpm_0 = get_team_bpm(tables)
+    net_this = bpm_0 + 0.2 * (exp_0 - 3)
+    time.sleep(3)
+    tables = pd.read_html(f'https://www.sports-reference.com/cbb/schools/{team}/{gender}/{year - 1}.html')
+    exp_1 = get_team_experience(tables)
+    bpm_1 = get_team_bpm(tables)
+    net_last = bpm_1 + 0.2 * (exp_1 - 3)
+    return net_this * 0.8 + net_last * 0.2
+                                                                                        
+
+teams = get_all_teams(2024)
+
+results_df = []
+print(teams)
+for i in teams.name:
+    try:
+        x = slelo_2024(i)
+        print([i, x])
+        results_df.append([i, x])
+        time.sleep(3)
+    except:
+        print(str(i) + ' (No data)')
+        results_df.append([i, -20])
+        time.sleep(3)
+
+
+results_df = pd.DataFrame(results_df, columns = ['Team', 'SLELO'])
+results_df.Team = teams.Name
+print(results_df.sort_values(by = ['SLELO'], ascending = False))
+results_df.to_csv('slelo_2024.csv', index = False)
 
