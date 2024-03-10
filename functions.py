@@ -14,6 +14,8 @@ def get_all_teams(year, gender = 'M'):
         team_table = pd.read_html('https://www.sports-reference.com/cbb/schools/')[1]
     team_names = team_table.School[team_table.To == str(year)]
     teams = team_names.str.lower().replace(' ', '-', regex = True).replace('\&', '', regex = True).replace('\(', '', regex = True).replace('\)', '', regex = True).replace("\'", '', regex = True).replace('\.','', regex = True)
+    ## Account for California and Texas schools
+    teams = teams.str.replace('uc-', 'california-').replace('ut-', 'texas-').replace('unc-', 'north-carolina-')
     return pd.DataFrame(np.transpose([team_names.tolist(), teams.tolist()]), columns = ['Name', 'name'])
 
 
@@ -119,24 +121,24 @@ def slelo_2024(team, year = 2024, gender = 'men'):
     return net_this * 0.8 + net_last * 0.2
                                                                                         
 
-teams = get_all_teams(2024)
+teams = get_all_teams(2024, gender = 'women')
 
 results_df = []
 print(teams)
 for i in teams.name:
     try:
-        x = slelo_2024(i)
+        x = slelo_2024(i, gender = 'women')
         print([i, x])
         results_df.append([i, x])
         time.sleep(3)
     except:
         print(str(i) + ' (No data)')
-        results_df.append([i, -20])
+        results_df.append([i, -19])
         time.sleep(3)
 
 
 results_df = pd.DataFrame(results_df, columns = ['Team', 'SLELO'])
 results_df.Team = teams.Name
 print(results_df.sort_values(by = ['SLELO'], ascending = False))
-results_df.to_csv('slelo_2024.csv', index = False)
+results_df.to_csv('slelo_2024_women.csv', index = False)
 
