@@ -6,9 +6,9 @@ import urllib3
 from urllib.request import urlopen
 
 
-def get_all_teams(year, gender = 'M'):
+def get_all_teams(year, gender = 'men'):
     ## Return the first table if men's, the second if women's
-    if gender == 'M':
+    if gender == 'men':
         team_table = pd.read_html('https://www.sports-reference.com/cbb/schools/')[0]
     else:
         team_table = pd.read_html('https://www.sports-reference.com/cbb/schools/')[1]
@@ -16,6 +16,8 @@ def get_all_teams(year, gender = 'M'):
     teams = team_names.str.lower().replace(' ', '-', regex = True).replace('\&', '', regex = True).replace('\(', '', regex = True).replace('\)', '', regex = True).replace("\'", '', regex = True).replace('\.','', regex = True)
     ## Account for California and Texas schools
     teams = teams.str.replace('uc-', 'california-').replace('ut-', 'texas-').replace('unc-', 'north-carolina-')
+    ## Edge cases
+    teams = teams.str.replace('tcu', 'texas-christian').replace('sam-houston', 'sam-houston-state')
     return pd.DataFrame(np.transpose([team_names.tolist(), teams.tolist()]), columns = ['Name', 'name'])
 
 
