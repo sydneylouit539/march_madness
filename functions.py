@@ -123,13 +123,15 @@ def slelo_2024(team, year = 2024, gender = 'men'):
     return net_this * 0.8 + net_last * 0.2
                                                                                         
 
-teams = get_all_teams(2024, gender = 'women')
+
+m_f = input('Please choose gender (men or women): ')
+teams = get_all_teams(2024, gender = m_f)
 
 results_df = []
 print(teams)
 for i in teams.name:
     try:
-        x = slelo_2024(i, gender = 'women')
+        x = slelo_2024(i, gender = m_f)
         print([i, x])
         results_df.append([i, x])
         time.sleep(3)
@@ -142,5 +144,5 @@ for i in teams.name:
 results_df = pd.DataFrame(results_df, columns = ['Team', 'SLELO'])
 results_df.Team = teams.Name
 print(results_df.sort_values(by = ['SLELO'], ascending = False))
-results_df.to_csv('slelo_2024_women.csv', index = False)
+results_df.to_csv(f'slelo_2024_{m_f}.csv', index = False)
 
